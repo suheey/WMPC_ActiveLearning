@@ -1,36 +1,28 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[6]:
-
-
 import numpy as np
 import os, time
 import pandas as pd
 import pickle as pkl
+
+from sklearn.cluster import KMeans, MiniBatchKMeans, DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix,accuracy_score,f1_score, recall_score, precision_score
+from skimage.transform import resize
+
+from scipy.spatial import distance
+import tqdm, csv
+
 
 import tensorflow as tf
 import keras
 from keras import layers, Input, models, Sequential
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.layers import Input, Dense, Conv2D, MaxPool2D, Dropout, Flatten, Activation, concatenate, GlobalAveragePooling2D
-from skimage.transform import resize
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix,accuracy_score,f1_score, recall_score, precision_score
 from keras.callbacks import EarlyStopping
 from keras.utils import to_categorical
 
 import matplotlib.pyplot as plt
-import time
 
-from sklearn.cluster import KMeans, MiniBatchKMeans, DBSCAN
-from sklearn.preprocessing import StandardScaler
-
-from scipy.spatial import distance
-import tqdm, csv
-
-
-# In[7]:
 
 
 # Data Load
@@ -42,11 +34,9 @@ with open('WM.pkl','rb') as f:
 print(fea_all.shape, fea_all_tst.shape, len(X_rs), len(X_tst), y.shape, Y_tst.shape)
 
 
-# In[8]:
 
 
 # Number of each class
-
 unique, counts = np.unique(np.where(y==1)[1], return_counts=True)
 num_trn= dict(zip(unique, counts))
 print("Number of Train Class", num_trn)
@@ -55,10 +45,6 @@ unique, counts = np.unique(np.where(Y_tst==1)[1], return_counts=True)
 num_tst= dict(zip(unique, counts))
 print("Number of Test Class", num_tst)
 
-
-# # Train / Validation / Test Split
-
-# In[9]:
 
 
 def _permutation(set):
@@ -70,9 +56,6 @@ def _permutation(set):
 
 
 # # CNN Model
-
-# In[10]:
-
 
 # read training data
 X_U = X_rs
@@ -94,18 +77,11 @@ y_U = np.delete(y_U, initial_idx, axis=0)
 print(X_U.shape, X_train.shape, X_test.shape)
 
 
-# In[11]:
-
-
 def get_dropout(input_tensor, p=0.5, mc=False):
     if mc:
         return Dropout(p)(input_tensor, training=True)
     else:
         return Dropout(p)(input_tensor)
-
-
-# In[12]:
-
 
 def create_model(mc=False):
     dim = 64
@@ -132,18 +108,12 @@ model = create_model(mc=False)
 mc_model=create_model(mc=True)
 
 
-# In[8]:
-
-
 unique, counts = np.unique(np.where(y_train==1)[1], return_counts=True)
 num_trn= dict(zip(unique, counts))
 print("Number of Train Class", num_trn)
 
 
-# In[9]:
-
-
-# the active learning loop
+# active learning loop
 n_queries = 50
 epoch=10
 batch_size = 20
@@ -190,15 +160,7 @@ for idx in range(n_queries):
     
     y_hat=np.argmax(model.predict(X_tst), axis=1)
     y_true = np.argmax(Y_tst,axis=1)
-    '''
-    unique, counts = np.unique(y_hat, return_counts=True)
-    num_trn= dict(zip(unique, counts))
-    print("Number of Train Class", num_trn)
-    
-    unique, counts = np.unique(y_true, return_counts=True)
-    num_trn= dict(zip(unique, counts))
-    print("Number of Train Class", num_trn)
-    '''
+
     # performance metric
     print('Macro average F1 score:', f1_score(y_true, y_hat, average='macro'))
     print('Micro average F1 score:', f1_score(y_true, y_hat, average='micro'))
@@ -207,9 +169,6 @@ for idx in range(n_queries):
     f1_mic.append(f1_score(y_true, y_hat, average='macro'))
     f1_p.append(recall_score(y_true, y_hat, average='macro'))
     f1_r.append(precision_score(y_true, y_hat, average='macro'))
-
-
-# In[10]:
 
 
 with open( 'f1_mac', 'w') as output:
@@ -228,8 +187,6 @@ with open( 'f1_r', 'w') as output:
     out = csv.writer(output)
     out.writerows(map(lambda x: [x], f1_mac))
 
-
-# In[ ]:
 
 
 
